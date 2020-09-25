@@ -146,12 +146,21 @@
             audio.play();
         }
 
-        function genFromForm() {
+        async function genFromForm() {
             username = document.getElementById("username").value;
             type = document.getElementById("type").value;
             source = document.getElementById("source").value;
             matrix = Number(document.getElementById("matrix").value);
             error = false;
+
+            //if MAL account does not exist
+            response = await fetch("https://api.jikan.moe/v3/user/" + username);
+            data = await response.json();
+            console.log(data);
+            if (data["status"] == "404") {
+                error = true;
+                alert("Account " + username + " does not exist.")
+            }
 
             //if matrix is blank, set to 3
             if (matrix == "") {
