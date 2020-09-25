@@ -96,6 +96,10 @@
             width = 500;
             ratio = 30; //margin as proportion of unit
 
+            //disable generate button
+            genButton = document.getElementById("genButton");
+            genButton.disabled = true;
+
             //margin width
             margin = width / ((m * ratio) + 1);
             //true width (minus extra margin)
@@ -142,6 +146,7 @@
                 }
             }
             feedback("Completed grid");
+            genButton.disabled = false;
             var audio = new Audio('./nyanpass.mpga');
             audio.play();
         }
@@ -218,7 +223,7 @@
         <label for="matrix">Grid Size:</label>
         <input type="text" id="matrix" name="matrix" size="1"><br>
 
-        <button onclick='genFromForm();'>Generate Grid</button>
+        <button id="genButton" onclick='genFromForm();'>Generate Grid</button>
     </div>
 
     <div id="output">

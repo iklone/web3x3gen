@@ -70,3 +70,8 @@ input, select, button {
 button {
     cursor: pointer;
 }
+
+button:disabled {
+    background-color: gray;
+    cursor: default;
+}
