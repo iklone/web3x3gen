@@ -1,0 +1,221 @@
+<head>
+    <title>3x3 Generator</title>
+    <link rel = "stylesheet" type = "text/css" href = "./main.css">
+    <link rel="icon" type="image/png" href="./favicon.png"/>
+
+    <script>
+        //send feedback to user
+        function feedback(string) {
+            feedbacker = document.getElementById("feedback");
+            feedbacker.innerHTML = "[" + string + "]";
+        }
+
+        //pause for ms milliseconds
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        //shuffle array
+        function shuffle(a) {
+            for (let i = a.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [a[i], a[j]] = [a[j], a[i]];
+            }
+            return a;
+        }
+
+        //insert all images for list items of type of rating into imgList
+        async function getList(username, type, imgList, score) {
+            response = await fetch("https://api.jikan.moe/v3/user/" + username + "/" + type + "list?order_by=score&sort=desc");
+            data = await response.json();
+            list = data[type];
+
+            for (fav in list) {
+                if (list[fav]["score"] == score) {
+                    console.log(list[fav]["title"]);
+                    imgList.push(list[fav]["image_url"]);
+                }
+            }
+        }
+
+        //insert all images for faves of type into imglist
+        async function getFav(username, type, imgList) {
+            response = await fetch("https://api.jikan.moe/v3/user/" + username);
+            data = await response.json();
+            favlist = data["favorites"][type];
+
+            for (fav in favlist) {
+                console.log(favlist[fav]["title"]);
+                imgList.push(favlist[fav]["image_url"]);
+            }
+        }
+
+        //get image from web
+        async function drawImage(img, imgList, m, uWidth, sWidth, margin, done) {
+            x = Math.floor(loc / m);
+            y = loc % m;
+
+            imgObj = new Image();
+            imgObj.src = imgList[anime];
+
+            imgObj.onload = function(){
+                srcY = (imgObj.height / 2) - (imgObj.width / 2);                
+                img.drawImage((imgObj), (0), (srcY), (imgObj.width), (imgObj.width), ((x * uWidth) + margin), ((y * uWidth) + margin), (sWidth), (sWidth));
+                feedback("Inserted image " + (done + 1) + " / " + (m * m) + " (" + Math.ceil(100 * ((done + 1) / (m * m))) + "%)");
+            }
+        }
+
+        //insert all of imglist into img
+        async function insert(img, imgList, m, uWidth, sWidth, margin, done) {
+            loc = 0;
+            for (anime in imgList) {
+                //find open spot
+                while (true) {
+                    loc = Math.floor(Math.random() * (m * m));
+                    if (fMatrix[loc] == "E") {
+                        break;
+                    }
+                }
+
+                console.log(anime + " in " + loc);
+                drawImage(img, imgList, m, uWidth, sWidth, margin, done)
+                await sleep(2000);
+
+                fMatrix[loc] = "F";
+                done++;
+
+                if (done == (m * m)) {
+                    break;
+                }
+            }
+        }
+
+        //generate 3x3 with params username, type (anime/manga/chars/people), favKA (is from fav? Else from list), m (matric width), width (image width)
+        async function gen3x3(username, type, source, m) {
+            imgList = [];
+            width = 500;
+            ratio = 30; //margin as proportion of unit
+
+            //margin width
+            margin = width / ((m * ratio) + 1);
+            //true width (minus extra margin)
+            uWidth = 30 * (width / ((m * ratio) + 1));
+            //img width
+            sWidth = 29 * (width / ((m * ratio) + 1));
+
+            console.log(margin, uWidth, sWidth);
+
+            canvas = document.getElementById("canvas");
+            canvas.width = width;
+            canvas.height = width;
+            canvas.style.border = "1px solid white";
+            img = canvas.getContext("2d");
+
+            img.fillStyle = "black";
+            img.fillRect(0, 0, canvas.width, canvas.height);
+
+            fMatrix = Array.from("E".repeat(m * m));
+            done = 0;
+
+            if (source == "fav") { //if from faves
+                await getFav(username, type, imgList);
+                feedback("Got " + imgList.length + " " + type + " from favourites");
+
+                shuffle(imgList);
+                await insert(img, imgList, m, uWidth, sWidth, margin, done);
+            } else { //if from list
+                score = 10;
+                while (true) {
+                    console.log("Score: " + score);
+                    imgList = [];
+                    await getList(username, type, imgList, score);
+                    feedback("Got " + imgList.length + " " + type + " of score " + score);
+
+                    shuffle(imgList);
+                    await insert(img, imgList, m, uWidth, sWidth, margin, done);
+
+                    score = score - 1;
+                    done = done + imgList.length;
+                    if (done >= (m * m)) {
+                        break;
+                    }
+                }
+            }
+            feedback("Completed grid");
+            var audio = new Audio('./nyanpass.mpga');
+            audio.play();
+        }
+
+        function genFromForm() {
+            username = document.getElementById("username").value;
+            type = document.getElementById("type").value;
+            source = document.getElementById("source").value;
+            matrix = Number(document.getElementById("matrix").value);
+            error = false;
+
+            //if matrix is blank, set to 3
+            if (matrix == "") {
+                matrix = 3;
+            }
+
+            //if matrix is not a valid integer
+            if (Number.isInteger(matrix) == false || matrix < 1 || matrix > 17) {
+                error = true;
+                alert("Matrix must be an integer between 1 and 17");
+            }
+
+            //if invalid type is selected
+            if (source == "list") {
+                if (type == "characters") {
+                    error = true;
+                    alert('The "Characters" type grid can only be selected from source "Favourites".');
+                }
+                if (type == "people") {
+                    error = true;
+                    alert('The "People" type grid can only be selected from source "Favourites".');
+                }
+            }
+
+            if (error == false) {
+                window.location.href = '#output';
+                feedback("Generation initialising");
+                gen3x3(username, type, source, matrix);
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1><a href=".">3x3 Generator</a></h1>
+    3x3 anime/manga generator for MAL using the Jikan API.<br>
+    Built by <a href="http://iklone.org">iklone</a>.
+    <div id="form">
+        <label for="username">MAL Username:</label>
+        <input type="text" id="username" name="username"><br>
+
+        <label for="type">Grid type:</label>
+        <select id="type" name="type">
+            <option value="anime">Anime</option>
+            <option value="manga">Manga</option>
+            <option value="characters">Characters</option>
+            <option value="people">People</option>
+        </select>
+
+        <label for="source">Grid source:</label>
+        <select id="source" name="source">
+            <option value="fav">Favourites</option>
+            <option value="list">List</option>
+        </select><br>
+
+        <label for="matrix">Grid Size:</label>
+        <input type="text" id="matrix" name="matrix" size="1"><br>
+
+        <button onclick='genFromForm();'>Generate Grid</button>
+    </div>
+
+    <div id="output">
+        <canvas id="canvas" width="1000" height="1000"></canvas>
+        <div id="feedback"></div>
+    </div>
+
+    <img id="mahoro" src="./mahoro.png">
+</body>
