@@ -52,6 +52,7 @@
 
             //grab API reqs for all pages
             for (i = 1; i <= pageNum; i++) {
+                sleep(1000);
                 response = await fetch("https://api.jikan.moe/v3/user/" + username + "/" + type + "list/all/" + i + "?order_by=score&sort=desc");
                 data = await response.json();
                 nList = data[type];
@@ -136,6 +137,7 @@
             imgList = [];
             width = 500;
             ratio = 30; //margin as proportion of unit
+            console.log(num);
 
             //disable generate button
             genButton = document.getElementById("genButton");
@@ -185,7 +187,7 @@
 
                     score = score - 1;
                     done = done + imgList.length;
-                    if (done >= (m * m)) {
+                    if (done >= (m * m) || score < 0) {
                         break;
                     }
                 }
@@ -193,8 +195,11 @@
 
             feedback("Completed grid");
             genButton.disabled = false;
-            var audio = new Audio('./nyanpass.mpga');
-            audio.play();
+
+            if (document.getElementById("noise").checked) {
+                var audio = new Audio('./nyanpass.mpga');
+                audio.play();
+            }
         }
 
         async function genFromForm() {
@@ -219,7 +224,8 @@
                 } else {
                     //get useful vars from req
                     aNum = data["anime_stats"]["total_entries"] - data["anime_stats"]["plan_to_watch"];
-                    mNum = data["manga_stats"]["total_entries"] - data["manga_stats"]["plan_to_watch"];
+                    mNum = data["manga_stats"]["total_entries"] - data["manga_stats"]["plan_to_read"];
+                    console.log("a: " + aNum + ", m: " + mNum);
 
                     if (source == "list") {
                         if (type == "anime") {
@@ -308,10 +314,11 @@
         <label for="matrix">Grid Size:</label>
         <input type="text" id="matrix" name="matrix" size="1"><br>
 
-        <!--<a id="advancedButton" href="javascript:;" onclick="advancedClick();">▼ Advanced</a>-->
+        <a id="advancedButton" href="javascript:;" onclick="advancedClick();">▲ Advanced</a>
 
         <div id="advancedOptions" style="display: none;">
-            Hello
+            <label for="noise">Play sound on completion:</label>
+            <input type="checkbox" id="noise" class="checkbox" name="noise" checked="true">
         </div>
 
         <button id="genButton" onclick='genFromForm();'>Generate Grid</button>
