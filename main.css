@@ -37,11 +37,12 @@ a:hover {
     text-align: left;
 }
 
-#form button {
+#form button, #form a {
     margin-top: 10px;
     display: block;
     margin-left: auto;
     margin-right: auto;
+    text-align: center;
 }
 
 #output {
@@ -61,7 +62,6 @@ input, select, button {
     margin-bottom: 10px;
     border: 1px solid black;
     padding: 5px 10px;
-    display: inline-block;
     font-size: 16px;
     background-color: white;
     color: black;
@@ -74,4 +74,9 @@ button {
 button:disabled {
     background-color: gray;
     cursor: default;
+}
+
+#advancedOptions {
+    border: 1px solid white;
+    padding: 10px;
 }

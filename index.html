@@ -3,7 +3,12 @@
     <link rel = "stylesheet" type = "text/css" href = "./main.css">
     <link rel="icon" type="image/png" href="./favicon.png"/>
 
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <meta content="utf-8" http-equiv="encoding">
+
     <script>
+        var advanced = false;
+
         //send feedback to user
         function feedback(string) {
             feedbacker = document.getElementById("feedback");
@@ -24,12 +29,40 @@
             return a;
         }
 
-        //insert all images for list items of type of rating into imgList
-        async function getList(username, type, imgList, score) {
-            response = await fetch("https://api.jikan.moe/v3/user/" + username + "/" + type + "list?order_by=score&sort=desc");
-            data = await response.json();
-            list = data[type];
+        //when Advanced is clicked
+        function advancedClick() {
+            advButton = document.getElementById("advancedButton");
+            advDiv = document.getElementById("advancedOptions")
 
+            if (advanced) {
+                advanced = false;
+                advancedButton = advButton.innerHTML = "▲ Advanced";
+                advDiv.style.display = "none";
+            } else {
+                advanced = true;
+                advancedButton = advButton.innerHTML = "▼ Advanced";
+                advDiv.style.display = "block";
+            }
+        }
+
+        //return full MAL anime/manga list
+        async function getList(username, num) {
+            pageNum = Math.ceil(num / 300);
+            list = [];
+
+            //grab API reqs for all pages
+            for (i = 1; i <= pageNum; i++) {
+                response = await fetch("https://api.jikan.moe/v3/user/" + username + "/" + type + "list/all/" + i + "?order_by=score&sort=desc");
+                data = await response.json();
+                nList = data[type];
+                list = list.concat(nList);
+            }
+
+            return list;
+        }
+
+        //insert all images for list items of type of rating into imgList
+        async function getScore(username, type, imgList, list, score) {
             for (fav in list) {
                 if (list[fav]["score"] == score) {
                     console.log(list[fav]["title"]);
@@ -59,8 +92,16 @@
             imgObj.src = imgList[anime];
 
             imgObj.onload = function(){
-                srcY = (imgObj.height / 2) - (imgObj.width / 2);                
-                img.drawImage((imgObj), (0), (srcY), (imgObj.width), (imgObj.width), ((x * uWidth) + margin), ((y * uWidth) + margin), (sWidth), (sWidth));
+                if (imgObj.height >= imgObj.width) {
+                    //if portrait
+                    srcY = (imgObj.height / 2) - (imgObj.width / 2);                
+                    img.drawImage((imgObj), (0), (srcY), (imgObj.width), (imgObj.width), ((x * uWidth) + margin), ((y * uWidth) + margin), (sWidth), (sWidth));
+                } else {
+                    //if landscape
+                    srcX = (imgObj.width / 2) - (imgObj.height / 2);                
+                    img.drawImage((imgObj), (srcX), (0), (imgObj.height), (imgObj.height), ((x * uWidth) + margin), ((y * uWidth) + margin), (sWidth), (sWidth));
+                }
+
                 feedback("Inserted image " + (done + 1) + " / " + (m * m) + " (" + Math.ceil(100 * ((done + 1) / (m * m))) + "%)");
             }
         }
@@ -91,7 +132,7 @@
         }
 
         //generate 3x3 with params username, type (anime/manga/chars/people), favKA (is from fav? Else from list), m (matric width), width (image width)
-        async function gen3x3(username, type, source, m) {
+        async function gen3x3(username, type, source, m, num) {
             imgList = [];
             width = 500;
             ratio = 30; //margin as proportion of unit
@@ -129,10 +170,14 @@
                 await insert(img, imgList, m, uWidth, sWidth, margin, done);
             } else { //if from list
                 score = 10;
+                list = await getList(username, num);
+                console.log(list);
+
                 while (true) {
                     console.log("Score: " + score);
                     imgList = [];
-                    await getList(username, type, imgList, score);
+
+                    await getScore(username, type, imgList, list, score);
                     feedback("Got " + imgList.length + " " + type + " of score " + score);
 
                     shuffle(imgList);
@@ -145,6 +190,7 @@
                     }
                 }
             }
+
             feedback("Completed grid");
             genButton.disabled = false;
             var audio = new Audio('./nyanpass.mpga');
@@ -158,13 +204,33 @@
             matrix = Number(document.getElementById("matrix").value);
             error = false;
 
-            //if MAL account does not exist
-            response = await fetch("https://api.jikan.moe/v3/user/" + username);
-            data = await response.json();
-            console.log(data);
-            if (data["status"] == "404") {
+            //if no username entered
+            if (username == "") {
                 error = true;
-                alert("Account " + username + " does not exist.")
+                alert("Please enter a MAL username.");
+            } else {
+                //if MAL account does not exist
+                response = await fetch("https://api.jikan.moe/v3/user/" + username);
+                data = await response.json();
+                console.log(data);
+                if (data["status"] == "404") {
+                    error = true;
+                    alert("Account " + username + " does not exist.");
+                } else {
+                    //get useful vars from req
+                    aNum = data["anime_stats"]["total_entries"] - data["anime_stats"]["plan_to_watch"];
+                    mNum = data["manga_stats"]["total_entries"] - data["manga_stats"]["plan_to_watch"];
+
+                    if (source == "list") {
+                        if (type == "anime") {
+                            num = aNum;
+                        } else {
+                            num = mNum;
+                        }
+                    } else {
+                        num = 0;
+                    }
+                }
             }
 
             //if matrix is blank, set to 3
@@ -173,9 +239,27 @@
             }
 
             //if matrix is not a valid integer
-            if (Number.isInteger(matrix) == false || matrix < 1 || matrix > 17) {
+            if (Number.isInteger(matrix) == false) {
                 error = true;
-                alert("Matrix must be an integer between 1 and 17");
+                alert("Matrix must be an integer between 1 and 17.");
+            } else if (matrix < 1) {
+                //if matrix is negative or zero
+                error = true;
+                alert("Matrix must be an integer between 1 and 17.");
+            } else {
+                if (source == "fav") {
+                    //if matrix is >3 with fav source
+                    if (matrix > 3) {
+                        error = true;
+                        alert('The maximum matrix size is 3x3 from the "Favourites" source.');
+                    }
+                } else {
+                    maxMatrix = Math.floor(Math.sqrt(num));
+                    if (matrix > maxMatrix) {
+                        error = true;
+                        alert('This matrix size exceeds the maximum of ' + maxMatrix + ' for this user.');
+                    }
+                }
             }
 
             //if invalid type is selected
@@ -190,10 +274,11 @@
                 }
             }
 
+            //run generator if no errors
             if (error == false) {
                 window.location.href = '#output';
                 feedback("Generation initialising");
-                gen3x3(username, type, source, matrix);
+                gen3x3(username, type, source, matrix, num);
             }
         }
     </script>
@@ -222,6 +307,12 @@
 
         <label for="matrix">Grid Size:</label>
         <input type="text" id="matrix" name="matrix" size="1"><br>
+
+        <!--<a id="advancedButton" href="javascript:;" onclick="advancedClick();">▼ Advanced</a>-->
+
+        <div id="advancedOptions" style="display: none;">
+            Hello
+        </div>
 
         <button id="genButton" onclick='genFromForm();'>Generate Grid</button>
     </div>
