@@ -88,7 +88,7 @@
             }
             if (genre) {
                 selectedGenre = document.getElementById("genre").value;
-                selectedGenre = selectedStudio.toLowerCase();
+                selectedGenre = selectedGenre.toLowerCase();
             }
 
             //insert image if satisfactory
@@ -160,8 +160,8 @@
                     if (genre) {
                         //if selectedstudio not in studio list then error
                         foundGenre = false;
-                        for (listedStudio in fullData["genres"]) {
-                            if (fullData["genres"][listedStudio]["name"].toLowerCase() == selectedGenre) {
+                        for (listedGenre in fullData["genres"]) {
+                            if (fullData["genres"][listedGenre]["name"].toLowerCase() == selectedGenre) {
                                 foundGenre = true;
                             }
                         }
@@ -463,8 +463,8 @@
                 }
             }
 
-            //if filters are active (only applicable when source=list)
-            if (source == "list") {
+            //if filters are active (only applicable when source=list and when advanced tab is open)
+            if (source == "list" && advanced) {
                 //if airdate filter active
                 if (startAirDate != "" || endAirDate != "") {
                     airDate = true;
