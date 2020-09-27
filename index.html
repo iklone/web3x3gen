@@ -295,9 +295,10 @@
     Built by <a href="http://iklone.org">iklone</a>.
     <div id="form">
         <label for="username">MAL Username:</label>
-        <input type="text" id="username" name="username"><br>
-
-        <label for="type">Grid type:</label>
+        <input type="text" id="username" name="username">
+        
+        <br>
+        <label for="type">Grid Type:</label>
         <select id="type" name="type">
             <option value="anime">Anime</option>
             <option value="manga">Manga</option>
@@ -305,18 +306,59 @@
             <option value="people">People</option>
         </select>
 
-        <label for="source">Grid source:</label>
+        <label for="source">Grid Source:</label>
         <select id="source" name="source">
             <option value="fav">Favourites</option>
             <option value="list">List</option>
-        </select><br>
-
+        </select>
+        
+        <br>
         <label for="matrix">Grid Size:</label>
-        <input type="text" id="matrix" name="matrix" size="1"><br>
-
-        <a id="advancedButton" href="javascript:;" onclick="advancedClick();">▲ Advanced</a>
+        <input type="text" id="matrix" name="matrix" size="1">
+        
+        <br>
+        <div class="centreText">
+            <a id="advancedButton" class="wideButton" href="javascript:;" onclick="advancedClick();">▲ Advanced</a>
+        </div>
 
         <div id="advancedOptions" style="display: none;">
+            <div class="centreText">
+                Leave option blank to disable filter.
+            </div>
+
+            <div class="wipFeatures">
+
+            <hr>
+            <label for="startAirDate">Aired between:</label>
+            <input type="date" id="startAirDate" name="startAirDate">
+
+            <label for="endAirDate">until:</label>
+            <input type="date" id="endAirDate" name="endAirDate">
+
+            <br>
+            <label for="startWatchDate">Watched between:</label>
+            <input type="date" id="startWatchDate" name="startWatchDate">
+
+            <label for="endWatchDate">until:</label>
+            <input type="date" id="endWatchDate" name="endWatchDate">
+
+            <br>
+            <label for="studio">From studio:</label>
+            <input type="text" id="studio" name="studio">
+            <a href="https://myanimelist.net/anime/producer" target="_blank">[i]</a>
+
+            <br>
+            <label for="genre">Of genre:</label>
+            <input type="text" id="genre" name="genre">
+            <a href="https://myanimelist.net/anime.php" target="_blank">[i]</a>
+
+            <hr>
+            <label for="recommendee">Recommend to (will only include items this user has not listed):</label>
+            <input type="text" id="recommendee" name="recommendee">
+
+            </div>
+
+            <hr>
             <label for="noise">Play sound on completion:</label>
             <input type="checkbox" id="noise" class="checkbox" name="noise" checked="true">
         </div>
