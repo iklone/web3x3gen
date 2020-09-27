@@ -48,7 +48,7 @@
         //return full MAL anime/manga list
         async function getList(username, num) {
             pageNum = Math.ceil(num / 300);
-            list = [];
+            tlist = [];
 
             //grab API reqs for all pages
             for (i = 1; i <= pageNum; i++) {
@@ -56,14 +56,14 @@
                 response = await fetch("https://api.jikan.moe/v3/user/" + username + "/" + type + "list/all/" + i + "?order_by=score&sort=desc");
                 data = await response.json();
                 nList = data[type];
-                list = list.concat(nList);
+                tlist = tlist.concat(nList);
             }
 
-            return list;
+            return tlist;
         }
 
         //insert all images for list items of type of rating into imgList
-        async function getScore(username, type, imgList, list, score, airDate, watchDate, studio, genre) {
+        async function getScore(username, type, imgList, list, score, airDate, watchDate, studio, genre, rec, recList) {
             searched = 0;
 
             //set watch/read value
@@ -170,6 +170,17 @@
                         }
                     }
 
+                    //check rec filter
+                    if (!error) {
+                        for (recFav in recList) {
+                            //if anime is in reclist then error
+                            if (recList[recFav]["mal_id"] == list[fav]["mal_id"]) {
+                                error = true;
+                                break;
+                            }
+                        }
+                    }
+
                     //if no error then add image to list
                     if (!error) {
                         console.log(list[fav]["title"]);
@@ -243,7 +254,7 @@
         }
 
         //generate 3x3 with params username, type (anime/manga/chars/people), favKA (is from fav? Else from list), m (matric width), width (image width)
-        async function gen3x3(username, type, source, m, num, airDate, watchDate, studio, genre) {
+        async function gen3x3(username, type, source, m, num, airDate, watchDate, studio, genre, rec) {
             imgList = [];
             width = 500;
             ratio = 30; //margin as proportion of unit
@@ -285,14 +296,40 @@
                 //if from list
                 score = 10;
                 list = await getList(username, num);
+
+                //if rec then get rec's list
+                recList = [];
+                if (rec) {
+                    recommendee = document.getElementById("recommendee").value;
+
+                    sleep(2000);
+                    response = await fetch("https://api.jikan.moe/v3/user/" + recommendee);
+                    rData = await response.json();
+                    console.log(rData);
+                    
+                    //get useful vars from req
+                    rANum = rData["anime_stats"]["total_entries"] - rData["anime_stats"]["plan_to_watch"];
+                    rMNum = rData["manga_stats"]["total_entries"] - rData["manga_stats"]["plan_to_read"];
+                    console.log("rec a: " + rANum + ", rec m: " + rMNum);
+
+                    if (type == "anime") {
+                        rNum = rANum;
+                    } else {
+                        rNum = rMNum;
+                    }
+
+                    recList = await getList(recommendee, rNum);
+                }
+
                 console.log(list);
+                console.log(recList);
 
                 while (true) {
                     console.log("Score: " + score);
                     imgList = [];
 
                     feedback("Found 0 anime of score " + score + ". Searched " + 0);
-                    await getScore(username, type, imgList, list, score, airDate, watchDate, studio, genre);
+                    await getScore(username, type, imgList, list, score, airDate, watchDate, studio, genre, rec, recList);
 
                     shuffle(imgList);
                     await insert(img, imgList, m, uWidth, sWidth, margin, done);
@@ -315,6 +352,8 @@
         }
 
         async function genFromForm() {
+            window.location.href = '#output';
+
             username = document.getElementById("username").value;
             type = document.getElementById("type").value;
             source = document.getElementById("source").value;
@@ -333,6 +372,9 @@
 
             genre = false;
             selectedGenre = document.getElementById("genre").value;
+
+            rec = false;
+            recommendee = document.getElementById("recommendee").value;
 
             error = false;
 
@@ -459,13 +501,28 @@
                 if (selectedGenre != "") {
                     genre = true;
                 }
+
+                if (recommendee != "") {
+                    rec = true;
+
+                    //if rec MAL account does not exist
+                    await sleep(2000);
+                    response = await fetch("https://api.jikan.moe/v3/user/" + recommendee);
+                    data = await response.json();
+                    console.log(data);
+                    if (data["status"] == "404") {
+                        error = true;
+                        alert("Account " + username + " does not exist.");
+                    }
+                }
             }
 
             //run generator if no errors
             if (error == false) {
-                window.location.href = '#output';
                 feedback("Generation initialising");
-                gen3x3(username, type, source, matrix, num, airDate, watchDate, studio, genre);
+                gen3x3(username, type, source, matrix, num, airDate, watchDate, studio, genre, rec);
+            } else {
+                window.location.href = '#';
             }
         }
     </script>
@@ -532,13 +589,9 @@
             <input type="text" id="genre" name="genre">
             <a href="https://myanimelist.net/anime.php" target="_blank">[i]</a>
 
-            <div class="wipFeatures">
-
             <hr>
             <label for="recommendee">Recommend to (will only include items this user has not listed):</label>
             <input type="text" id="recommendee" name="recommendee">
-
-            </div>
 
             <hr>
             <label for="noise">Play sound on completion:</label>
