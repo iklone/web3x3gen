@@ -4,6 +4,8 @@
  
  Based on my previous python-based 3x3gen.
  
+ Live version here: http://3x3.iklone.org
+ 
  #### Input variables:
  - MAL Username: MAL profile to build grid from.
  - Grid Type: What to put in the grid (anime/manga/characters/people).
