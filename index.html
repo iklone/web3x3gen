@@ -289,9 +289,10 @@
                 //if from faves
                 await getFav(username, type, imgList);
                 feedback("Got " + imgList.length + " " + type + " from favourites");
+                done = imgList.length;
 
                 shuffle(imgList);
-                await insert(img, imgList, m, uWidth, sWidth, margin, done);
+                await insert(img, imgList, m, uWidth, sWidth, margin, 0);
             } else {
                 //if from list
                 score = 10;
@@ -342,7 +343,18 @@
                 }
             }
 
-            feedback("Completed grid");
+            console.log("Finished at " + done + " / " + (m * m));
+
+            if (done >= (m * m)) {
+                feedback("Completed grid");
+            } else {
+                if (done == 0) {
+                    feedback("There are no entries for these parameters.");
+                } else {
+                    feedback("Not enough valid entries to complete grid. Try a lower matrix size.");
+                }
+            }
+
             genButton.disabled = false;
 
             if (document.getElementById("noise").checked) {
@@ -353,6 +365,7 @@
 
         async function genFromForm() {
             window.location.href = '#output';
+            feedback("Validating input");
 
             username = document.getElementById("username").value;
             type = document.getElementById("type").value;
@@ -580,13 +593,13 @@
             <input type="date" id="endWatchDate" name="endWatchDate">
 
             <br>
-            <label for="studio">From studio (anime only):</label>
+            <label for="studio">From studio<a onclick='alert("This filter will take a long time to process.");'>*</a> (anime only):</label>
             <input type="text" id="studio" name="studio" size="10">
             <a href="https://myanimelist.net/anime/producer" target="_blank">[i]</a>
 
             <br>
-            <label for="genre">Of genre:</label>
-            <input type="text" id="genre" name="genre">
+            <label for="genre">Of genre<a onclick='alert("This filter will take a long time to process.");'>*</a>:</label>
+            <input type="text" id="genre" name="genre" size="10">
             <a href="https://myanimelist.net/anime.php" target="_blank">[i]</a>
 
             <hr>
@@ -603,7 +616,7 @@
 
     <div id="output">
         <canvas id="canvas" width="1000" height="1000"></canvas>
-        <div id="feedback"></div>
+        <div id="feedback">[]</div>
     </div>
 
     <img id="mahoro" src="./mahoro.png">
