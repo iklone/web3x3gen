@@ -63,11 +63,22 @@
         }
 
         //insert all images for list items of type of rating into imgList
-        async function getScore(username, type, imgList, list, score, airDate) {
+        async function getScore(username, type, imgList, list, score, airDate, watchDate) {
+            //set watch/read value
+            if (type == "anime") {
+                watch = "watch";
+            } else {
+                watch = "read";
+            }
+
             //set up filter vars
             if (airDate) {
                 startAirDate = document.getElementById("startAirDate").value;
                 endAirDate = document.getElementById("endAirDate").value;
+            }
+            if (watchDate) {
+                startWatchDate = document.getElementById("startWatchDate").value;
+                endWatchDate = document.getElementById("endWatchDate").value;
             }
 
             //insert image if satisfactory
@@ -76,7 +87,7 @@
                 if (list[fav]["score"] == score) {
                     error = false;
 
-                    //if within airdate filter
+                    //check airdate filter
                     if (airDate) {
                         //if startairdate is null then error
                         if (list[fav]["start_date"] == null) {
@@ -89,6 +100,24 @@
 
                             //error if endairdate is before supplied startairdate (if endairdate is supplied)
                             if (list[fav]["end_date"] != null && list[fav]["end_date"] < startAirDate) {
+                                error = true;
+                            }
+                        }
+                    }
+
+                    //check watchDate filter
+                    if (watchDate) {
+                        //if completedate is null then error
+                        if (list[fav][watch + "_end_date"] == null) {
+                            error = true;
+                        } else {
+                            //error if completedate is after supplied endwatchdate
+                            if (list[fav][watch + "_end_date"] > endWatchDate) {
+                                error = true;
+                            }
+
+                            //error if completedate is before supplied startwatchdate
+                            if (list[fav][watch + "_end_date"] < startWatchDate) {
                                 error = true;
                             }
                         }
@@ -164,7 +193,7 @@
         }
 
         //generate 3x3 with params username, type (anime/manga/chars/people), favKA (is from fav? Else from list), m (matric width), width (image width)
-        async function gen3x3(username, type, source, m, num, airDate) {
+        async function gen3x3(username, type, source, m, num, airDate, watchDate) {
             imgList = [];
             width = 500;
             ratio = 30; //margin as proportion of unit
@@ -212,7 +241,7 @@
                     console.log("Score: " + score);
                     imgList = [];
 
-                    await getScore(username, type, imgList, list, score, airDate);
+                    await getScore(username, type, imgList, list, score, airDate, watchDate);
                     feedback("Got " + imgList.length + " " + type + " of score " + score);
 
                     shuffle(imgList);
@@ -244,6 +273,10 @@
             airDate = false;
             startAirDate = document.getElementById("startAirDate").value;
             endAirDate = document.getElementById("endAirDate").value;
+
+            watchDate = false;
+            startWatchDate = document.getElementById("startWatchDate").value;
+            endWatchDate = document.getElementById("endWatchDate").value;
 
             error = false;
 
@@ -326,7 +359,7 @@
                     airDate = true;
 
                     //if both air dates are not filled in
-                    if (endAirDate == "" || endAirDate == "") {
+                    if (startAirDate == "" || endAirDate == "") {
                         error = true;
                         alert('To filter by air dates, both start and end air dates are required.');
                     }
@@ -337,13 +370,30 @@
                         alert('Airing start date cannot be after the end date.');
                     }
                 }
+
+                //if watchdate filter active
+                if (startWatchDate != "" || endWatchDate != "") {
+                    watchDate = true;
+
+                    //if both air dates are not filled in
+                    if (startWatchDate == "" || endWatchDate == "") {
+                        error = true;
+                        alert('To filter by completion date, both start and end completion dates are required.');
+                    }
+
+                    //if start date is after end date
+                    if (startWatchDate > endWatchDate) {
+                        error = true;
+                        alert('Completion start date cannot be after the end date.');
+                    }
+                }
             }
 
             //run generator if no errors
             if (error == false) {
                 window.location.href = '#output';
                 feedback("Generation initialising");
-                gen3x3(username, type, source, matrix, num, airDate);
+                gen3x3(username, type, source, matrix, num, airDate, watchDate);
             }
         }
     </script>
@@ -373,7 +423,7 @@
         
         <br>
         <label for="matrix">Grid Size:</label>
-        <input type="text" id="matrix" name="matrix" size="1">
+        <input type="text" id="matrix" name="matrix" size="3">
         
         <br>
         <div class="centreText">
@@ -393,18 +443,18 @@
             <label for="endAirDate">until:</label>
             <input type="date" id="endAirDate" name="endAirDate">
 
-            <div class="wipFeatures">
-
             <br>
-            <label for="startWatchDate">Watched between:</label>
+            <label for="startWatchDate">Completed between:</label>
             <input type="date" id="startWatchDate" name="startWatchDate">
 
             <label for="endWatchDate">until:</label>
             <input type="date" id="endWatchDate" name="endWatchDate">
 
+            <div class="wipFeatures">
+
             <br>
-            <label for="studio">From studio:</label>
-            <input type="text" id="studio" name="studio">
+            <label for="studio">From studio (anime only):</label>
+            <input type="text" id="studio" name="studio" size="10">
             <a href="https://myanimelist.net/anime/producer" target="_blank">[i]</a>
 
             <br>
