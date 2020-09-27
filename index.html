@@ -63,11 +63,42 @@
         }
 
         //insert all images for list items of type of rating into imgList
-        async function getScore(username, type, imgList, list, score) {
+        async function getScore(username, type, imgList, list, score, airDate) {
+            //set up filter vars
+            if (airDate) {
+                startAirDate = document.getElementById("startAirDate").value;
+                endAirDate = document.getElementById("endAirDate").value;
+            }
+
+            //insert image if satisfactory
             for (fav in list) {
+                //if correct score
                 if (list[fav]["score"] == score) {
-                    console.log(list[fav]["title"]);
-                    imgList.push(list[fav]["image_url"]);
+                    error = false;
+
+                    //if within airdate filter
+                    if (airDate) {
+                        //if startairdate is null then error
+                        if (list[fav]["start_date"] == null) {
+                            error = true;
+                        } else {
+                            //error if startairdate is after supplied endairdate
+                            if (list[fav]["start_date"] > endAirDate) {
+                                error = true;
+                            }
+
+                            //error if endairdate is before supplied startairdate (if endairdate is supplied)
+                            if (list[fav]["end_date"] != null && list[fav]["end_date"] < startAirDate) {
+                                error = true;
+                            }
+                        }
+                    }
+
+                    //if no error then add image to list
+                    if (!error) {
+                        console.log(list[fav]["title"]);
+                        imgList.push(list[fav]["image_url"]);
+                    }
                 }
             }
         }
@@ -133,7 +164,7 @@
         }
 
         //generate 3x3 with params username, type (anime/manga/chars/people), favKA (is from fav? Else from list), m (matric width), width (image width)
-        async function gen3x3(username, type, source, m, num) {
+        async function gen3x3(username, type, source, m, num, airDate) {
             imgList = [];
             width = 500;
             ratio = 30; //margin as proportion of unit
@@ -164,13 +195,15 @@
             fMatrix = Array.from("E".repeat(m * m));
             done = 0;
 
-            if (source == "fav") { //if from faves
+            if (source == "fav") {
+                //if from faves
                 await getFav(username, type, imgList);
                 feedback("Got " + imgList.length + " " + type + " from favourites");
 
                 shuffle(imgList);
                 await insert(img, imgList, m, uWidth, sWidth, margin, done);
-            } else { //if from list
+            } else {
+                //if from list
                 score = 10;
                 list = await getList(username, num);
                 console.log(list);
@@ -179,7 +212,7 @@
                     console.log("Score: " + score);
                     imgList = [];
 
-                    await getScore(username, type, imgList, list, score);
+                    await getScore(username, type, imgList, list, score, airDate);
                     feedback("Got " + imgList.length + " " + type + " of score " + score);
 
                     shuffle(imgList);
@@ -207,6 +240,11 @@
             type = document.getElementById("type").value;
             source = document.getElementById("source").value;
             matrix = Number(document.getElementById("matrix").value);
+
+            airDate = false;
+            startAirDate = document.getElementById("startAirDate").value;
+            endAirDate = document.getElementById("endAirDate").value;
+
             error = false;
 
             //if no username entered
@@ -239,7 +277,7 @@
                 }
             }
 
-            //if matrix is blank, set to 3
+            //if matrix is blank, set to 3 (no error)
             if (matrix == "") {
                 matrix = 3;
             }
@@ -260,6 +298,7 @@
                         alert('The maximum matrix size is 3x3 from the "Favourites" source.');
                     }
                 } else {
+                    //if matrix is too big for list
                     maxMatrix = Math.floor(Math.sqrt(num));
                     if (matrix > maxMatrix) {
                         error = true;
@@ -268,7 +307,7 @@
                 }
             }
 
-            //if invalid type is selected
+            //if invalid type is selected from list source
             if (source == "list") {
                 if (type == "characters") {
                     error = true;
@@ -280,11 +319,31 @@
                 }
             }
 
+            //if filters are active (only applicable when source=list)
+            if (source == "list") {
+                //if airdate filter active
+                if (startAirDate != "" || endAirDate != "") {
+                    airDate = true;
+
+                    //if both air dates are not filled in
+                    if (endAirDate == "" || endAirDate == "") {
+                        error = true;
+                        alert('To filter by air dates, both start and end air dates are required.');
+                    }
+
+                    //if start date is after end date
+                    if (startAirDate > endAirDate) {
+                        error = true;
+                        alert('Airing start date cannot be after the end date.');
+                    }
+                }
+            }
+
             //run generator if no errors
             if (error == false) {
                 window.location.href = '#output';
                 feedback("Generation initialising");
-                gen3x3(username, type, source, matrix, num);
+                gen3x3(username, type, source, matrix, num, airDate);
             }
         }
     </script>
@@ -323,10 +382,9 @@
 
         <div id="advancedOptions" style="display: none;">
             <div class="centreText">
-                Leave option blank to disable filter.
+                Advanced options only affect grids using the "List" source.<br>
+                Leave options blank to disable filter.
             </div>
-
-            <div class="wipFeatures">
 
             <hr>
             <label for="startAirDate">Aired between:</label>
@@ -334,6 +392,8 @@
 
             <label for="endAirDate">until:</label>
             <input type="date" id="endAirDate" name="endAirDate">
+
+            <div class="wipFeatures">
 
             <br>
             <label for="startWatchDate">Watched between:</label>
